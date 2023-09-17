@@ -38,6 +38,7 @@ void ComputeMeanAndCovDiag(const C& data, D& mean, D& cov_diag, Getter&& getter)
     // clang-format off
     mean = std::accumulate(data.begin(), data.end(), D::Zero().eval(),
                            [&getter](const D& sum, const auto& data) -> D { return sum + getter(data); }) / len;
+    // cwiseAbs2() 将返回一个具有相同维度但值为每个元素绝对值的平方的向量（或矩阵）
     cov_diag = std::accumulate(data.begin(), data.end(), D::Zero().eval(),
                                [&mean, &getter](const D& sum, const auto& data) -> D {
                                    return sum + (getter(data) - mean).cwiseAbs2().eval();

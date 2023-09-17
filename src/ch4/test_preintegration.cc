@@ -8,8 +8,8 @@
 
 #include "ch3/eskf.hpp"
 #include "ch3/static_imu_init.h"
-#include "ch4/imu_preintegration.h"
 #include "ch4/g2o_types.h"
+#include "ch4/imu_preintegration.h"
 #include "common/g2o_types.h"
 #include "common/io_utils.h"
 
@@ -45,7 +45,7 @@ TEST(PREINTEGRATION_TEST, ROTATION_TEST) {
         pre_integ.Integrate(sad::IMU(time, constant_omega, acce), imu_time_span);
 
         sad::NavStated this_status = pre_integ.Predict(start_status, gravity);
-
+        // P57-(3.16) IMU 直接积分
         t = t + v * imu_time_span + 0.5 * gravity * imu_time_span * imu_time_span +
             0.5 * (R * acce) * imu_time_span * imu_time_span;
         v = v + gravity * imu_time_span + (R * acce) * imu_time_span;

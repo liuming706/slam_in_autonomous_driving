@@ -30,7 +30,7 @@ bool StaticIMUInit::AddIMU(const IMU& imu) {
 
     double init_time = imu.timestamp_ - init_start_time_;  // 初始化经过时间
     if (init_time > options_.init_time_seconds_) {
-        // 尝试初始化逻辑
+        // 尝试初始化逻辑, 估计测量噪声和零偏
         TryInit();
     }
 

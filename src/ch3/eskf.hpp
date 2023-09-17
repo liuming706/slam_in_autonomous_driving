@@ -227,7 +227,7 @@ bool ESKF<S>::Predict(const IMU& imu) {
         return false;
     }
 
-    // nominal state 递推
+    // nominal state 递推 p77-(3.41)
     VecT new_p = p_ + v_ * dt + 0.5 * (R_ * (imu.acce_ - ba_)) * dt * dt + 0.5 * g_ * dt * dt;
     VecT new_v = v_ + R_ * (imu.acce_ - ba_) * dt + g_ * dt;
     SO3 new_R = R_ * SO3::exp((imu.gyro_ - bg_) * dt);

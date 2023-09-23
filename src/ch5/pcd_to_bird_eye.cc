@@ -46,6 +46,7 @@ void GenerateBEVImage(PointCloudType::Ptr cloud) {
     cv::Mat image(image_rows, image_cols, CV_8UC3, cv::Scalar(255, 255, 255));
 
     for (const auto& pt : cloud->points) {
+        // 使点云的中心点与图像的中心重合（图像坐标系原点位于左上角，向右 x 正 ，向下 y 正）
         int x = int((pt.x - x_center) * inv_r + x_center_image);
         int y = int((pt.y - y_center) * inv_r + y_center_image);
         if (x < 0 || x >= image_cols || y < 0 || y >= image_rows || pt.z < FLAGS_min_z || pt.z > FLAGS_max_z) {

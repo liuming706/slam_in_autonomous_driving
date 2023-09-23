@@ -49,6 +49,7 @@ void bfnn_cloud_mt(CloudPtr cloud1, CloudPtr cloud2, std::vector<std::pair<size_
     });
 }
 
+// 查找 cloud2 中的每个点在 cloud1 中的最近邻点
 void bfnn_cloud(CloudPtr cloud1, CloudPtr cloud2, std::vector<std::pair<size_t, size_t>>& matches) {
     // 单线程版本
     std::vector<size_t> index(cloud2->size());

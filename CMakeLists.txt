@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.5)
 project(slam_in_auto_driving)
+
 set(CMAKE_PREFIX_PATH "/opt/ros/noetic")
 message("CMAKE_PREFIX_PATH${CMAKE_PREFIX_PATH}")
-set(DEFAULT_BUILD_TYPE "Release")
+set(CMAKE_BUILD_TYPE "Release")
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "-w")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -g -ggdb ${CMAKE_CXX_FLAGS}")

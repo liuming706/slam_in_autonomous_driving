@@ -62,8 +62,8 @@ bool Icp3d::AlignP2P(SE3& init_pose) {
             }
         });
 
-        // 累加Hessian和error,计算dx
-        // 原则上可以用reduce并发，写起来比较麻烦，这里写成accumulate
+        // 累加 Hessian 和 error ,计算 dx
+        // 原则上可以用 reduce 并发，写起来比较麻烦，这里写成 accumulate
         double total_res = 0;
         int effective_num = 0;
         auto H_and_err = std::accumulate(
@@ -162,6 +162,7 @@ bool Icp3d::AlignP2Plane(SE3& init_pose) {
                 effect_pts[idx] = true;
 
                 // build residual
+                // P254-(7.7)
                 Eigen::Matrix<double, 1, 6> J;
                 J.block<1, 3>(0, 0) = -n.head<3>().transpose() * pose.so3().matrix() * SO3::hat(q);
                 J.block<1, 3>(0, 3) = n.head<3>().transpose();
@@ -279,8 +280,8 @@ bool Icp3d::AlignP2Line(SE3& init_pose) {
                 }
 
                 effect_pts[idx] = true;
-
                 // build residual
+                // P255 -（7.11）
                 Eigen::Matrix<double, 3, 6> J;
                 J.block<3, 3>(0, 0) = -SO3::hat(d) * pose.so3().matrix() * SO3::hat(q);
                 J.block<3, 3>(0, 3) = SO3::hat(d);

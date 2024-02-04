@@ -48,8 +48,11 @@ void KdTree::Insert(const IndexVec &points, KdTreeNode *node) {
     }
 
     IndexVec left, right;
-    if (!FindSplitAxisAndThresh(points, node->axis_index_, node->split_thresh_, left, right)) {
+    if (!FindSplitAxisAndThresh(points, node->axis_index_, node->split_thresh_, left,
+                                right) /*更新节点的分割轴，分割阈值，分割后的左右点云索引*/) {
+        // points 无法有效分割则生成叶子节点
         size_++;
+        // points 的数量可能为 1 个，也可能为多个，但数值相同
         node->point_idx_ = points[0];
         return;
     }
@@ -61,8 +64,9 @@ void KdTree::Insert(const IndexVec &points, KdTreeNode *node) {
             Insert(index, new_node);
         }
     };
-
+    // 分割后的左侧点云数量不为空，则递归调用函数添加左节点
     create_if_not_empty(node->left_, left);
+    // 分割后的右侧点云数量不为空，则递归调用函数添加右节点
     create_if_not_empty(node->right_, right);
 }
 

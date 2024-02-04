@@ -9,7 +9,7 @@ mapping:
                  0, 1, 0,
                  0, 0, 1 ]
 
-point_filter_num: 3
+point_filter_num: 1
 max_iteration: 10
 imu_has_gravity: true
 with_ui: false

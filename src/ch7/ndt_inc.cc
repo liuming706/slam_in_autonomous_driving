@@ -157,7 +157,7 @@ bool IncNdt3d::AlignNdt(SE3& init_pose) {
                         continue;
                     }
 
-                    // build residual
+                    // build residual P259-(7.16)
                     Eigen::Matrix<double, 3, 6> J;
                     J.block<3, 3>(0, 0) = -pose.so3().matrix() * SO3::hat(q);
                     J.block<3, 3>(0, 3) = Mat3d::Identity();
@@ -184,7 +184,7 @@ bool IncNdt3d::AlignNdt(SE3& init_pose) {
             if (!effect_pts[idx]) {
                 continue;
             }
-
+            // P259-(7.15)
             total_res += errors[idx].transpose() * infos[idx] * errors[idx];
             effective_num++;
 

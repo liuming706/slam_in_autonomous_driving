@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
             icp.SetSource(source);
             icp.SetTarget(target);
             icp.SetGroundTruth(gt_pose);
-            SE3 pose;
+            SE3 pose;  // 从 I 矩阵开始迭代
             success = icp.AlignP2P(pose);
             if (success) {
                 LOG(INFO) << "icp p2p align success, pose: " << pose.so3().unit_quaternion().coeffs().transpose()

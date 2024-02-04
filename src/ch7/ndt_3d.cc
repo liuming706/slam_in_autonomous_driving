@@ -18,6 +18,7 @@ void Ndt3d::BuildVoxels() {
 
     /// 分配体素
     std::vector<size_t> index(target_->size());
+    // mutable：这是一个修饰符，表示lambda函数可以修改其捕获的变量。在lambda函数外部，idx 的值仍然是原始的值。
     std::for_each(index.begin(), index.end(), [idx = 0](size_t& i) mutable { i = idx++; });
 
     std::for_each(index.begin(), index.end(), [this](const size_t& idx) {
@@ -39,7 +40,7 @@ void Ndt3d::BuildVoxels() {
             // SVD 检查最大与最小奇异值，限制最小奇异值
 
             Eigen::JacobiSVD svd(v.second.sigma_, Eigen::ComputeFullU | Eigen::ComputeFullV);
-            Vec3d lambda = svd.singularValues();
+            Vec3d lambda = svd.singularValues();  // 获取奇异值
             if (lambda[1] < lambda[0] * 1e-3) {
                 lambda[1] = lambda[0] * 1e-3;
             }
@@ -47,15 +48,17 @@ void Ndt3d::BuildVoxels() {
             if (lambda[2] < lambda[0] * 1e-3) {
                 lambda[2] = lambda[0] * 1e-3;
             }
-
+            // inv_lambda 对角线上的元素是奇异值的倒数
             Mat3d inv_lambda = Vec3d(1.0 / lambda[0], 1.0 / lambda[1], 1.0 / lambda[2]).asDiagonal();
 
             // v.second.info_ = (v.second.sigma_ + Mat3d::Identity() * 1e-3).inverse();  // 避免出nan
+            // 通过将右奇异向量矩阵V、倒数奇异值对角矩阵inv_lambda和左奇异向量矩阵U的转置相乘得到信息矩阵。
+            // 这个过程基于奇异值分解的性质，可以用来估计协方差矩阵的逆。
             v.second.info_ = svd.matrixV() * inv_lambda * svd.matrixU().transpose();
         }
     });
 
-    /// 删除点数不够的
+    /// 删除点数不够 3 的体素
     for (auto iter = grids_.begin(); iter != grids_.end();) {
         if (iter->second.idx_.size() > options_.min_pts_in_voxel_) {
             iter++;
@@ -110,7 +113,7 @@ bool Ndt3d::AlignNdt(SE3& init_pose) {
                 int real_idx = idx * num_residual_per_point + i;
                 if (it != grids_.end()) {
                     auto& v = it->second;  // voxel
-                    Vec3d e = qs - v.mu_;
+                    Vec3d e = qs - v.mu_;  // 误差
 
                     // check chi2 th
                     double res = e.transpose() * v.info_ * e;
@@ -134,8 +137,8 @@ bool Ndt3d::AlignNdt(SE3& init_pose) {
             }
         });
 
-        // 累加Hessian和error,计算dx
-        // 原则上可以用reduce并发，写起来比较麻烦，这里写成accumulate
+        // 累加 Hessian 和 error,计算 dx
+        // 原则上可以用 reduce 并发，写起来比较麻烦，这里写成 accumulate
         double total_res = 0;
         int effective_num = 0;
 

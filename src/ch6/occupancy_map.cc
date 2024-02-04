@@ -75,10 +75,12 @@ double OccupancyMap::FindRangeInAngle(double angle, Scan2d::Ptr scan) {
 
 void OccupancyMap::AddLidarFrame(std::shared_ptr<Frame> frame, GridMethod method) {
     auto& scan = frame->scan_;
-    
+
     // 此处不能直接使用frame->pose_submap_，因为frame可能来自上一个地图
     // 此时frame->pose_submap_还未更新，依旧是frame在上一个地图中的pose
+    // 激光雷达原点在珊格地图物理坐标系下的描述
     SE2 pose_in_submap = pose_.inverse() * frame->pose_;
+    // 激光雷达 link 在珊格地图物理坐标系下的姿态
     float theta = pose_in_submap.so2().log();
     has_outside_pts_ = false;
 
@@ -98,9 +100,11 @@ void OccupancyMap::AddLidarFrame(std::shared_ptr<Frame> frame, GridMethod method
     }
 
     if (method == GridMethod::MODEL_POINTS) {
-        // 遍历模板，生成白色点
+        // 遍历模板，生成白色点（激光雷达原点为模板中心，遍历模板点，模板姿态与珊格地图物理坐标系姿态一致）
         std::for_each(std::execution::par_unseq, model_.begin(), model_.end(), [&](const Model2DPoint& pt) {
+            // 激光雷达原点在珊格地图中的像素坐标
             Vec2i pos_in_image = World2Image(frame->pose_.translation());
+            // 模板点在珊格地图中的像素坐标
             Vec2i pw = pos_in_image + Vec2i(pt.dx_, pt.dy_);  // submap下
 
             if (pt.range_ < closest_th_) {

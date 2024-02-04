@@ -3,18 +3,22 @@
 //
 
 #include "ch6/mapping_2d.h"
+
+#include <glog/logging.h>
+
+#include <execution>
+#include <opencv2/opencv.hpp>
+
 #include "ch6/lidar_2d_utils.h"
 #include "ch6/loop_closing.h"
 #include "ch6/submap.h"
-
-#include <glog/logging.h>
-#include <execution>
-#include <opencv2/opencv.hpp>
 
 namespace sad {
 
 bool Mapping2D::Init(bool with_loop_closing) {
     keyframe_id_ = 0;
+    // 第一个子图的物理坐标系原点与世界坐标系原点重合
+    // 第一个子图的 id_ = 0;
     current_submap_ = std::make_shared<Submap>(SE2());
     all_submaps_.emplace_back(current_submap_);
 
@@ -30,6 +34,7 @@ bool Mapping2D::ProcessScan(MultiScan2d::Ptr scan) { return ProcessScan(MultiToS
 
 bool Mapping2D::ProcessScan(Scan2d::Ptr scan) {
     current_frame_ = std::make_shared<Frame>(scan);
+    // 第一个关键帧的 id_ = 0
     current_frame_->id_ = frame_id_++;
 
     if (last_frame_) {
@@ -42,6 +47,7 @@ bool Mapping2D::ProcessScan(Scan2d::Ptr scan) {
     // 利用scan matching来匹配地图
     if (!first_scan_) {
         // 第一帧无法匹配，直接加入到occupancy map
+        // 会更新 current_frame_ 的 pose_ 和 submap_pose_
         current_submap_->MatchScan(current_frame_);
     }
 
@@ -60,6 +66,7 @@ bool Mapping2D::ProcessScan(Scan2d::Ptr scan) {
 
         if (current_submap_->HasOutsidePoints() || (current_submap_->NumFrames()) > 50) {
             /// 走出了submap或者单个submap中的关键帧较多
+            // 会更新 current_frame_ 的 submap_pose_
             ExpandSubmap();
         }
     }
@@ -127,13 +134,14 @@ void Mapping2D::ExpandSubmap() {
     // debug
     cv::imwrite("./data/ch6/submap_" + std::to_string(last_submap->GetId()) + ".png",
                 last_submap->GetOccuMap().GetOccupancyGridBlackWhite());
-
     current_submap_ = std::make_shared<Submap>(current_frame_->pose_);
+    // 新添加的子图物理坐标系原点与当前帧的世界坐标重合
     current_frame_->pose_submap_ = SE2();  // 这个归零
 
     current_submap_->SetId(++submap_id_);
     current_submap_->AddKeyFrame(current_frame_);
-    current_submap_->SetOccuFromOtherSubmap(last_submap);  // 把上一帧的数据也放进来，不让一个submap显得太空
+    current_submap_->SetOccuFromOtherSubmap(
+        last_submap);  // 把上一个子图中的最近10帧数据也放进来，不让一个submap显得太空
 
     current_submap_->AddScanInOccupancyMap(current_frame_);
     all_submaps_.emplace_back(current_submap_);
@@ -149,7 +157,9 @@ void Mapping2D::ExpandSubmap() {
 
 cv::Mat Mapping2D::ShowGlobalMap(int max_size) {
     //// TODO 全局地图固定大小，使用动态分辨率
+    // 最终，地图左上角的像素坐标是最小的，给定较大的初始值，适配只有一个子图的情况
     Vec2f top_left = Vec2f(999999, 999999);
+    // 最终，地图右下角的像素坐标是最大的，给定较小的初始值，适配只有一个子图的情况
     Vec2f bottom_right = Vec2f(-999999, -999999);
 
     const float submap_resolution = 20.0;  // 子地图分辨率（1米多少个像素）
@@ -177,12 +187,12 @@ cv::Mat Mapping2D::ShowGlobalMap(int max_size) {
         return cv::Mat();
     }
 
-    /// 全局地图物理中心
+    /// 全局地图图像中心物理坐标
     Vec2f global_center = Vec2f((top_left[0] + bottom_right[0]) / 2.0, (top_left[1] + bottom_right[1]) / 2.0);
     float phy_width = bottom_right[0] - top_left[0];   // 物理尺寸
     float phy_height = bottom_right[1] - top_left[1];  // 物理尺寸
     float global_map_resolution = 0;
-
+    // 全局地图分辨率，一米由多少像素珊格表示
     if (phy_width > phy_height) {
         global_map_resolution = max_size / phy_width;
     } else {
@@ -190,13 +200,15 @@ cv::Mat Mapping2D::ShowGlobalMap(int max_size) {
     }
 
     Vec2f c = global_center;
-    int c_x = global_center[0] * global_map_resolution;
-    int c_y = global_center[1] * global_map_resolution;
-    global_center = Vec2f(c_x / global_map_resolution, c_y / global_map_resolution);  // 全局地图图像中心
-
+    int c_x = global_center[0] * global_map_resolution;  // 去除浮点数小数部分
+    int c_y = global_center[1] * global_map_resolution;  // 去除浮点数小数部分
+    global_center = Vec2f(c_x / global_map_resolution,
+                          c_y / global_map_resolution);  // 全局地图图像中心物理坐标
+    // 像素宽度
     int width = int((bottom_right[0] - top_left[0]) * global_map_resolution + 0.5);
+    // 像素高度
     int height = int((bottom_right[1] - top_left[1]) * global_map_resolution + 0.5);
-
+    // 全局地图图像中心的像素坐标（左上角为原点）的浮点数表示
     Vec2f center_image = Vec2f(width / 2, height / 2);
     cv::Mat output_image(height, width, CV_8UC3, cv::Scalar(127, 127, 127));
 
@@ -210,12 +222,15 @@ cv::Mat Mapping2D::ShowGlobalMap(int max_size) {
 
     std::for_each(std::execution::par_unseq, render_data.begin(), render_data.end(), [&](const Vec2i& xy) {
         int x = xy[0], y = xy[1];
+        // 该珊格点对应的世界坐标
         Vec2f pw = (Vec2f(x, y) - center_image) / global_map_resolution + c;  // 世界坐标
 
         for (auto& m : all_submaps_) {
-            Vec2f ps = m->GetPose().inverse().cast<float>() * pw;  // in submap
+            // pw 珊格点在 m 子图中的物理坐标
+            Vec2f ps = m->GetPose().inverse().cast<float>() * pw;
+            // pw 珊格点在 m 子图中的像素坐标
             Vec2i pt = (ps * submap_resolution + Vec2f(500, 500)).cast<int>();
-
+            // pw 珊格点在不在 m 子图中，则跳过该子图
             if (pt[0] < 0 || pt[0] >= 1000 || pt[1] < 0 || pt[1] >= 1000) {
                 continue;
             }
@@ -241,11 +256,14 @@ cv::Mat Mapping2D::ShowGlobalMap(int max_size) {
 
     for (auto& m : all_submaps_) {
         /// submap pose 在全局地图中的投影
+        // 子图中心的世界坐标
         SE2f submap_pose = m->GetPose().cast<float>();
         Vec2f submap_center = submap_pose.translation();
+        // 子图物理坐标系 x 轴 1m 处的点对应的世界坐标
         Vec2f submap_xw = submap_pose * Vec2f(1.0, 0);
+        // 子图物理坐标系 y 轴 1m 处的点对应的世界坐标
         Vec2f submap_yw = submap_pose * Vec2f(0, 1.0);
-
+        // 上面三个元素在全局地图下的像素坐标
         Vec2f center_map = (submap_center - global_center) * global_map_resolution + center_image;
         Vec2f x_map = (submap_xw - global_center) * global_map_resolution + center_image;
         Vec2f y_map = (submap_yw - global_center) * global_map_resolution + center_image;

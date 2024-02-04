@@ -317,15 +317,15 @@ bool ESKF<S>::ObserveSE3(const SE3& pose, double trans_noise, double ang_noise) 
     noise_vec << trans_noise, trans_noise, trans_noise, ang_noise, ang_noise, ang_noise;
 
     Mat6d V = noise_vec.asDiagonal();
-    Eigen::Matrix<S, 18, 6> K = cov_ * H.transpose() * (H * cov_ * H.transpose() + V).inverse();
+    Eigen::Matrix<S, 18, 6> K = cov_ * H.transpose() * (H * cov_ * H.transpose() + V).inverse();  // (2.107)
 
-    // 更新x和cov
+    // 更新x和cov (3.67)
     Vec6d innov = Vec6d::Zero();
     innov.template head<3>() = (pose.translation() - p_);          // 平移部分
-    innov.template tail<3>() = (R_.inverse() * pose.so3()).log();  // 旋转部分(3.67)
+    innov.template tail<3>() = (R_.inverse() * pose.so3()).log();  // 旋转部分
 
-    dx_ = K * innov;
-    cov_ = (Mat18T::Identity() - K * H) * cov_;
+    dx_ = K * innov;                             // (2.108)
+    cov_ = (Mat18T::Identity() - K * H) * cov_;  // (2.108)
 
     UpdateAndReset();
     return true;

@@ -42,7 +42,9 @@ class EdgeSE2LikelihoodFiled : public g2o::BaseUnaryEdge<1, double, VertexSE2> {
     bool IsOutSide() {
         VertexSE2* v = (VertexSE2*)_vertices[0];
         SE2 pose = v->estimate();
+        // 激光末端点在 field_image 的物理坐标系下的描述
         Vec2d pw = pose * Vec2d(range_ * std::cos(angle_), range_ * std::sin(angle_));
+        // 激光末端点在 field_image 的像素坐标系下的描述
         Vec2i pf = (pw * resolution_ + Vec2d(field_image_.rows / 2, field_image_.cols / 2)).cast<int>();  // 图像坐标
 
         if (pf[0] >= image_boarder_ && pf[0] < field_image_.cols - image_boarder_ && pf[1] >= image_boarder_ &&

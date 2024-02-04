@@ -30,6 +30,7 @@ void MRLikelihoodField::BuildModel() {
 
     for (int x = -range; x <= range; ++x) {
         for (int y = -range; y <= range; ++y) {
+            // 模板是基于像素单位存储的
             model_.emplace_back(x, y, std::sqrt((x * x) + (y * y)));
         }
     }
@@ -41,6 +42,7 @@ void MRLikelihoodField::SetFieldImageFromOccuMap(const cv::Mat& occu_map) {
         for (int y = boarder; y < occu_map.rows - boarder; ++y) {
             if (occu_map.at<uchar>(y, x) < 127) {
                 // 在该点生成一个model，在每个level中都填入
+                // 多个不同分辨率的似然场使用同一 model 去渲染
                 for (int l = 0; l < levels_; ++l) {
                     for (auto& model_pt : model_) {
                         int xx = int(x * ratios_[l] + model_pt.dx_);

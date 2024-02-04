@@ -91,7 +91,9 @@ void UpdateMeanAndCov(int hist_m, int curr_n, const Eigen::Matrix<S, D, 1>& hist
                       Eigen::Matrix<S, D, D>& new_var) {
     assert(hist_m > 0);
     assert(curr_n > 0);
+    // P273-(7.17)
     new_mean = (hist_m * hist_mean + curr_n * curr_mean) / (hist_m + curr_n);
+    // P274-(7.25)
     new_var = (hist_m * (hist_var + (hist_mean - new_mean) * (hist_mean - new_mean).template transpose()) +
                curr_n * (curr_var + (curr_mean - new_mean) * (curr_mean - new_mean).template transpose())) /
               (hist_m + curr_n);
@@ -120,7 +122,7 @@ bool FitPlane(std::vector<Eigen::Matrix<S, 3, 1>>& data, Eigen::Matrix<S, 4, 1>&
         A.row(i).head<3>() = data[i].transpose();
         A.row(i)[3] = 1.0;
     }
-
+    // A 的零空间解问题，奇异值解法：求 A 的最小奇异值对应的右奇异值向量（ p183 ）
     Eigen::JacobiSVD svd(A, Eigen::ComputeThinV);
     plane_coeffs = svd.matrixV().col(3);
 
@@ -146,9 +148,10 @@ bool FitLine(std::vector<Eigen::Matrix<S, 3, 1>>& data, Eigen::Matrix<S, 3, 1>& 
 
     Eigen::MatrixXd Y(data.size(), 3);
     for (int i = 0; i < data.size(); ++i) {
+        // 点在直线上时，Yx 取最大值
         Y.row(i) = (data[i] - origin).transpose();
     }
-
+    // Y 的最大值解问题，奇异值解法：求 Y 的最大奇异值对应的右奇异值向量
     Eigen::JacobiSVD svd(Y, Eigen::ComputeFullV);
     dir = svd.matrixV().col(0);
 

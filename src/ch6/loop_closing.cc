@@ -3,12 +3,6 @@
 //
 
 #include "loop_closing.h"
-#include "ch6/g2o_types.h"
-#include "lidar_2d_utils.h"
-
-#include <glog/logging.h>
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui.hpp>
 
 #include <g2o/core/base_unary_edge.h>
 #include <g2o/core/block_solver.h>
@@ -17,8 +11,14 @@
 #include <g2o/core/robust_kernel_impl.h>
 #include <g2o/core/sparse_optimizer.h>
 #include <g2o/solvers/cholmod/linear_solver_cholmod.h>
+#include <glog/logging.h>
 
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui.hpp>
 #include <opencv2/opencv.hpp>
+
+#include "ch6/g2o_types.h"
+#include "lidar_2d_utils.h"
 
 namespace sad {
 
@@ -36,13 +36,15 @@ void LoopClosing::AddNewSubmap(std::shared_ptr<Submap> submap) {
 
 void LoopClosing::AddNewFrame(std::shared_ptr<Frame> frame) {
     current_frame_ = frame;
+    // 构建候选对象（可能发生回环的子图）
     if (!DetectLoopCandidates()) {
         return;
     }
-
+    // 构建约束，子图为单元
     MatchInHistorySubmaps();
 
     if (has_new_loops_) {
+        // 优化
         Optimize();
     }
 }
@@ -50,7 +52,8 @@ void LoopClosing::AddNewFrame(std::shared_ptr<Frame> frame) {
 bool LoopClosing::DetectLoopCandidates() {
     // 要求当前帧与历史submap有一定间隔
     has_new_loops_ = false;
-    if (last_submap_id_ < submap_gap_) {
+    // 上一个子图为第一个子图时（当前只有一个子图），不进行回环
+    if (last_submap_id_ < submap_gap_ /*1*/) {
         return false;
     }
 
@@ -62,7 +65,7 @@ bool LoopClosing::DetectLoopCandidates() {
             continue;
         }
 
-        // 如果这个submap和历史submap已经存在有效的关联，也忽略之
+        // 如果这个 submap 和历史 submap 已经存在有效的关联，也忽略之
         auto hist_iter = loop_constraints_.find(std::pair<size_t, size_t>(sp.first, last_submap_id_));
         if (hist_iter != loop_constraints_.end() && hist_iter->second.valid_) {
             continue;
@@ -75,6 +78,7 @@ bool LoopClosing::DetectLoopCandidates() {
             /// 如果这个frame离submap中心差距小于阈值，则检查
             LOG(INFO) << "taking " << current_frame_->keyframe_id_ << " with " << sp.first
                       << ", last submap id: " << last_submap_id_;
+            // 与当前帧位置接近的历史子图会添加进候选对象集合
             current_candidates_.emplace_back(sp.first);
         }
     }
@@ -84,13 +88,15 @@ bool LoopClosing::DetectLoopCandidates() {
 
 void LoopClosing::MatchInHistorySubmaps() {
     // 我们先把要检查的scan, pose和submap存到离线文件, 把mr match调完了再实际上线
-    // current_frame_->Dump("./data/ch6/frame_" + std::to_string(current_frame_->id_) + ".txt");
+    // current_frame_->Dump("./data/ch6/frame_" +
+    // std::to_string(current_frame_->id_) + ".txt");
 
     for (const size_t& can : current_candidates_) {
         auto mr = submap_to_field_.at(submaps_[can]);
         mr->SetSourceScan(current_frame_->scan_);
 
         auto submap = submaps_[can];
+        // 当前帧在候选子图中的位置
         SE2 pose_in_target_submap = submap->GetPose().inverse() * current_frame_->pose_;  // T_S1_C
 
         if (mr->AlignG2O(pose_in_target_submap)) {

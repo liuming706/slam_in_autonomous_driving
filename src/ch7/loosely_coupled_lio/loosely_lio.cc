@@ -2,8 +2,8 @@
 #include <execution>
 
 #include "common/lidar_utils.h"
-#include "common/timer/timer.h"
 #include "common/point_cloud_utils.h"
+#include "common/timer/timer.h"
 #include "loosely_lio.h"
 
 namespace sad {
@@ -119,6 +119,7 @@ void LooselyLIO::Undistort() {
             [](const NavStated &s) { return s.GetSE3(); }, Ti, match);
 
         Vec3d pi = ToVec3d(pt);
+        // 去畸变后的点的 frame_id 都封装在 lidar_end_time_ 时刻 laser_frame 的位姿
         Vec3d p_compensate = TIL_.inverse() * T_end.inverse() * Ti * TIL_ * pi;
 
         pt.x = p_compensate(0);
@@ -139,7 +140,7 @@ void LooselyLIO::Align() {
 
     auto current_scan = ConvertToCloud<FullPointType>(scan_undistort_);
 
-    // voxel 之
+    // voxel 之，减少需要处理的点云数量
     pcl::VoxelGrid<PointType> voxel;
     voxel.setLeafSize(0.5, 0.5, 0.5);
     voxel.setInputCloud(current_scan);

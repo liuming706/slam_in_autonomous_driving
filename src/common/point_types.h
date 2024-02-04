@@ -47,7 +47,6 @@ inline PointType ToPointType(const Eigen::Matrix<S, 3, 1>& pt) {
     return p;
 }
 
-/// 带ring, range等其他信息的全量信息点云
 struct FullPointType {
     PCL_ADD_POINT4D;
     float range = 0;
@@ -55,7 +54,7 @@ struct FullPointType {
     uint8_t intensity = 0;
     uint8_t ring = 0;
     uint8_t angle = 0;
-    double time = 0;
+    double time = 0;  // 秒为单位
     float height = 0;
 
     inline FullPointType() {}

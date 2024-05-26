@@ -3,12 +3,14 @@
 //
 
 #include "ndt_3d.h"
-#include "common/lidar_utils.h"
-#include "common/math_utils.h"
 
 #include <glog/logging.h>
+
 #include <Eigen/SVD>
 #include <execution>
+
+#include "common/lidar_utils.h"
+#include "common/math_utils.h"
 
 namespace sad {
 
@@ -17,11 +19,13 @@ void Ndt3d::BuildVoxels() {
     assert(target_->empty() == false);
     grids_.clear();
 
-    /// 分配体素
+    ///  分配体素（将目标点云1m边长栅格化）
     std::vector<size_t> index(target_->size());
-    // mutable：这是一个修饰符，表示lambda函数可以修改其捕获的变量。在lambda函数外部，idx 的值仍然是原始的值。
+    // mutable：这是一个修饰符，表示lambda函数可以修改其捕获的变量。在lambda函数外部，idx
+    // 的值仍然是原始的值。
+    // 这段代码的作用是将容器index中的每个元素都赋值为递增的索引值。
     std::for_each(index.begin(), index.end(), [idx = 0](size_t& i) mutable { i = idx++; });
-
+    // （x，y，z）/珊格边长为键，值为对应符合条件的点的索引构成的数组
     std::for_each(index.begin(), index.end(), [this](const size_t& idx) {
         Vec3d pt = ToVec3d(target_->points[idx]) * options_.inv_voxel_size_;
         auto key = CastToInt(pt);
@@ -52,7 +56,8 @@ void Ndt3d::BuildVoxels() {
             // inv_lambda 对角线上的元素是奇异值的倒数
             Mat3d inv_lambda = Vec3d(1.0 / lambda[0], 1.0 / lambda[1], 1.0 / lambda[2]).asDiagonal();
 
-            // v.second.info_ = (v.second.sigma_ + Mat3d::Identity() * 1e-3).inverse();  // 避免出nan
+            // v.second.info_ = (v.second.sigma_ + Mat3d::Identity() *
+            // 1e-3).inverse();  // 避免出nan
             // 通过将右奇异向量矩阵V、倒数奇异值对角矩阵inv_lambda和左奇异向量矩阵U的转置相乘得到信息矩阵。
             // 这个过程基于奇异值分解的性质，可以用来估计协方差矩阵的逆。
             v.second.info_ = svd.matrixV() * inv_lambda * svd.matrixU().transpose();
@@ -174,8 +179,10 @@ bool Ndt3d::AlignNdt(SE3& init_pose) {
                   << ", dx: " << dx.transpose();
 
         // std::sort(chi2.begin(), chi2.end());
-        // LOG(INFO) << "chi2 med: " << chi2[chi2.size() / 2] << ", .7: " << chi2[chi2.size() * 0.7]
-        //           << ", .9: " << chi2[chi2.size() * 0.9] << ", max: " << chi2.back();
+        // LOG(INFO) << "chi2 med: " << chi2[chi2.size() / 2] << ", .7: " <<
+        // chi2[chi2.size() * 0.7]
+        //           << ", .9: " << chi2[chi2.size() * 0.9] << ", max: " <<
+        //           chi2.back();
 
         if (gt_set_) {
             double pose_error = (gt_pose_.inverse() * pose).log().norm();

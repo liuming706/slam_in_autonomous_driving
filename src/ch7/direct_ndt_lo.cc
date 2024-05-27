@@ -41,7 +41,7 @@ void DirectNDTLO::AddCloud(CloudPtr scan, SE3& pose) {
         if (scans_in_local_map_.size() > options_.num_kfs_in_local_map_) {
             scans_in_local_map_.pop_front();
         }
-
+        // 缺点1： 增加关键帧时，我们每次都需要重新建立局部地图
         local_map_.reset(new PointCloudType);
         for (auto& scan : scans_in_local_map_) {
             *local_map_ += *scan;

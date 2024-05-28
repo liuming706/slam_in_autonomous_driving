@@ -13,6 +13,7 @@ void IncrementalNDTLO::AddCloud(CloudPtr scan, SE3& pose, bool use_guess) {
         // 第一个帧，直接加入local map
         pose = SE3();
         last_kf_pose_ = pose;
+        // 第一帧时，激光雷达所在位置为世界坐标系原点
         ndt_.AddCloud(scan);
         first_frame_ = false;
         return;

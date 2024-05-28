@@ -60,6 +60,7 @@ void IncNdt3d::UpdateVoxel(VoxelData& v) {
             math::ComputeMeanAndCov(v.pts_, v.mu_, v.sigma_, [this](const Vec3d& p) { return p; });
             v.info_ = (v.sigma_ + Mat3d::Identity() * 1e-3).inverse();  // 避免出nan
         } else {
+            // 体素内只有一个点的情况
             v.mu_ = v.pts_[0];
             v.info_ = Mat3d::Identity() * 1e2;
         }
@@ -68,7 +69,7 @@ void IncNdt3d::UpdateVoxel(VoxelData& v) {
         v.pts_.clear();
         return;
     }
-
+    // 如果一个栅格里的累计点数已经有很多，我们就不再对其进行更新了
     if (v.ndt_estimated_ && v.num_pts_ > options_.max_pts_in_voxel_) {
         return;
     }

@@ -54,12 +54,14 @@ void Ndt3d::BuildVoxels() {
                 lambda[2] = lambda[0] * 1e-3;
             }
             // inv_lambda 对角线上的元素是奇异值的倒数
+            // 行列式不为0的矩阵才存在逆矩阵
             Mat3d inv_lambda = Vec3d(1.0 / lambda[0], 1.0 / lambda[1], 1.0 / lambda[2]).asDiagonal();
 
             // v.second.info_ = (v.second.sigma_ + Mat3d::Identity() *
             // 1e-3).inverse();  // 避免出nan
             // 通过将右奇异向量矩阵V、倒数奇异值对角矩阵inv_lambda和左奇异向量矩阵U的转置相乘得到信息矩阵。
             // 这个过程基于奇异值分解的性质，可以用来估计协方差矩阵的逆。
+            // SVD分解： A = U*lambda对角矩阵*V_H
             v.second.info_ = svd.matrixV() * inv_lambda * svd.matrixU().transpose();
         }
     });

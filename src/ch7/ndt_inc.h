@@ -60,7 +60,7 @@ class IncNdt3d {
         Mat3d info_ = Mat3d::Zero();   // 协方差之逆
 
         bool ndt_estimated_ = false;  // NDT是否已经估计
-        int num_pts_ = 0;             // 总共的点数，用于更新估计
+        int num_pts_ = 0;             // 记录上一次高斯特征更新时体素内的点的数量
     };
 
     IncNdt3d() {

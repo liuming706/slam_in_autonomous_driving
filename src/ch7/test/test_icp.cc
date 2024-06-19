@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
     // EPFL 模型比较精细，配准时应该采用较小的栅格
 
     std::ifstream fin(FLAGS_ground_truth_file);
-    SE3 gt_pose;
+    SE3 gt_pose;  // 真值位姿
     if (fin) {
         double tx, ty, tz, qw, qx, qy, qz;
         fin >> tx >> ty >> tz >> qw >> qx >> qy >> qz;
@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
     pcl::io::loadPCDFile(fLS::FLAGS_target, *target);
 
     bool success;
-
+    /// 点到点
     sad::evaluate_and_call(
         [&]() {
             sad::Icp3d icp;

@@ -31,6 +31,7 @@ constexpr size_t kINVALID_ID = std::numeric_limits<size_t>::max();
  * @tparam D    结果类型
  * @tparam Getter   获取数据函数, 接收一个容器内数据类型，返回一个D类型
  */
+// Getter&& getter用来支持完美转发，使函数能够处理不同种类的参数类型，同时保证效率
 template <typename C, typename D, typename Getter>
 void ComputeMeanAndCovDiag(const C& data, D& mean, D& cov_diag, Getter&& getter) {
     size_t len = data.size();

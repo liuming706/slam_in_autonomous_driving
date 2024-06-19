@@ -17,7 +17,7 @@ namespace sad {
 /// Kd树节点，二叉树结构，内部用祼指针，对外一个root的shared_ptr
 struct KdTreeNode {
     int id_ = -1;
-    int point_idx_ = 0;            // 点的索引
+    int point_idx_ = 0;            // 点的索引（只有叶子节点有）
     int axis_index_ = 0;           // 分割轴
     float split_thresh_ = 0.0;     // 分割位置
     KdTreeNode* left_ = nullptr;   // 左子树

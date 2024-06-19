@@ -18,6 +18,7 @@ bool KdTree::BuildTree(const CloudPtr &cloud) {
 
     cloud_.clear();
     cloud_.resize(cloud->size());
+    // TODO： 转为并发代码
     for (size_t i = 0; i < cloud->points.size(); ++i) {
         cloud_[i] = ToVec3f(cloud->points[i]);
     }
@@ -26,10 +27,11 @@ bool KdTree::BuildTree(const CloudPtr &cloud) {
     Reset();
 
     IndexVec idx(cloud->size());
+    // TODO： 转为并发代码
     for (int i = 0; i < cloud->points.size(); ++i) {
         idx[i] = i;
     }
-
+    // 进入 Insert（）递归函数dfs
     Insert(idx, root_.get());
     return true;
 }
@@ -77,7 +79,8 @@ bool KdTree::GetClosestPoint(const PointType &pt, std::vector<int> &closest_idx,
     }
     k_ = k;
 
-    std::priority_queue<NodeAndDistance> knn_result;
+    std::priority_queue<NodeAndDistance> knn_result;  //大根堆
+    // 进入Knn()递归函数dfs
     Knn(ToVec3f(pt), root_.get(), knn_result);
 
     // 排序并返回结果
